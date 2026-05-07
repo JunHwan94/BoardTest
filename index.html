@@ -3,107 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JLPT N3 Master (Offline Ready)</title>
+    <title>N3 Master Console</title>
     <style>
-        :root { --primary: #2c3e50; --accent: #e74c3c; --bg: #f4f7f6; }
-        body { font-family: sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { width: 100%; max-width: 500px; }
-        .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
-        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; background: #ddd; }
-        .tab-btn.active { background: var(--primary); color: white; }
-        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; min-height: 200px; display: flex; flex-direction: column; justify-content: center; margin-bottom: 15px; }
-        .main-text { font-size: 3rem; margin: 0; font-weight: bold; }
-        .sub-text { font-size: 1.3rem; color: var(--accent); margin-top: 10px; min-height: 1.5rem; visibility: hidden; }
-        .sub-text.show { visibility: visible; }
-        .grammar-detail { text-align: left; font-size: 1rem; line-height: 1.6; }
-        .btn-group { display: flex; gap: 10px; }
-        .btn { flex: 1; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; }
-        .btn-check { background: #eee; }
-        .btn-next { background: var(--primary); color: white; }
+        :root { --primary: #1a1a1a; --accent: #007aff; --bg: #f2f2f7; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; align-items: center; padding: 20px; color: #1c1c1e; }
+        .container { width: 100%; max-width: 440px; }
+        
+        /* 헤더 & 탭 */
+        header { text-align: center; margin-bottom: 25px; }
+        .tabs { display: flex; background: #e5e5ea; padding: 3px; border-radius: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .tab-btn.active { background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        /* 카드 UI */
+        .card { background: white; border-radius: 20px; padding: 40px 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; min-height: 250px; display: flex; flex-direction: column; justify-content: center; margin-bottom: 20px; }
+        .word { font-size: 3.5rem; font-weight: 800; margin-bottom: 15px; letter-spacing: -1px; }
+        .info { font-size: 1.4rem; color: var(--accent); font-weight: 500; opacity: 0; transform: translateY(10px); transition: 0.3s; }
+        .info.show { opacity: 1; transform: translateY(0); }
+
+        /* 문법 스타일 */
+        .grammar-title { font-size: 1.5rem; font-weight: 700; color: var(--accent); margin-bottom: 15px; }
+        .grammar-meaning { font-size: 1.1rem; color: #3a3a3c; line-height: 1.5; margin-bottom: 20px; }
+        .grammar-example { text-align: left; background: #f8f8f8; padding: 15px; border-radius: 12px; font-size: 0.95rem; border-left: 5px solid var(--accent); }
+
+        /* 버튼 */
+        .btn-group { display: flex; gap: 12px; }
+        button.action { flex: 1; padding: 18px; border: none; border-radius: 15px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: transform 0.1s; }
+        button.action:active { transform: scale(0.97); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #e5e5ea; color: #1c1c1e; }
+        
+        .status { font-size: 0.8rem; color: #8e8e93; margin-top: 15px; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <header>
+        <h1>JLPT N3 Dash</h1>
+    </header>
+
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('vocab')">단어 퀴즈</button>
-        <button class="tab-btn" onclick="switchTab('grammar')">문법/지문</button>
+        <button id="vocab-tab" class="tab-btn active" onclick="switchTab('vocab')">단어 퀴즈</button>
+        <button id="grammar-tab" class="tab-btn" onclick="switchTab('grammar')">문법 지문</button>
     </div>
 
-    <!-- 단어 섹션 -->
-    <div id="vocab-section">
-        <div class="card">
-            <p id="v-kanji" class="main-text">준비</p>
-            <p id="v-info" class="sub-text">じゅんび | 준비</p>
-        </div>
-        <div class="btn-group">
-            <button class="btn btn-check" onclick="showAnswer('v-info')">정답 확인</button>
-            <button class="btn btn-next" onclick="nextVocab()">다음 단어</button>
-        </div>
-    </div>
-
-    <!-- 문법 섹션 -->
-    <div id="grammar-section" style="display:none;">
-        <div class="card">
-            <div id="g-content" class="grammar-detail">
-                <strong id="g-title" style="font-size: 1.2rem; color: var(--accent);">~たばかり</strong><br>
-                <p id="g-meaning" style="margin: 5px 0; color: #666;">막 ~했을 뿐</p>
-                <hr>
-                <p id="g-ex">さっき昼ごはんを食べたばかりです。</p>
+    <div class="card">
+        <div id="loader">데이터 로드 중...</div>
+        <div id="content" style="display:none;">
+            <!-- 어휘 영역 -->
+            <div id="vocab-area">
+                <div id="display-word" class="word">...</div>
+                <div id="display-info" class="info">...</div>
+            </div>
+            <!-- 문법 영역 -->
+            <div id="grammar-area" style="display:none;">
+                <div id="g-title" class="grammar-title">...</div>
+                <div id="g-meaning" class="grammar-meaning">...</div>
+                <div id="g-example" class="grammar-example">...</div>
             </div>
         </div>
-        <div class="btn-group">
-            <button class="btn btn-next" style="width: 100%;" onclick="nextGrammar()">다른 문법 보기</button>
-        </div>
     </div>
+
+    <div class="btn-group">
+        <button id="sub-btn" class="action btn-secondary" onclick="reveal()">정답 확인</button>
+        <button class="action btn-primary" onclick="loadNext()">다음 문제</button>
+    </div>
+
+    <div id="debug-status" class="status">API 상태 확인 중...</div>
 </div>
 
 <script>
-    // N3 단어 데이터 (예시 데이터 - 용량을 위해 일부만 수록, 여기에 더 추가 가능)
-    const n3Vocab = [
-        {k: "解決", r: "かいけつ", m: "해결"}, {k: "確認", r: "かくにん", m: "확인"},
-        {k: "経済", r: "けいざい", m: "경제"}, {k: "複雑", r: "ふくざつ", m: "복잡"},
-        {k: "法律", r: "ほうりつ", m: "법률"}, {k: "興味", r: "きょうみ", m: "흥미"},
-        {k: "技術", r: "ぎじゅつ", m: "기술"}, {k: "広告", r: "こうこく", m: "광고"}
-    ];
+    // 1. 검증된 오픈소스 데이터 API (jsDelivr CDN 사용으로 CORS 우회)
+    const VOCAB_API = "https://cdn.jsdelivr.net/gh/j-f-v/jlpt-vocabulary@master/json/n3.json";
+    const GRAMMAR_API = "https://cdn.jsdelivr.net/gh/mistval/jlpt-grammar-api@master/db.json";
 
-    // N3 문법 데이터
-    const n3Grammar = [
-        {t: "~おかげで", m: "~덕분에", e: "先生のおかげで合格しました。"},
-        {t: "~うちに", m: "~하는 동안에", e: "若いうちに勉強しておきなさい。"},
-        {t: "~はずだ", m: "~할 터이다", e: "彼は今日来るはずです。"},
-        {t: "~たとたん", m: "~하자마자", e: "家を出たとたん、雨が降り出した。"}
-    ];
+    let vocabList = [];
+    let grammarList = [];
+    let currentMode = 'vocab';
 
-    function switchTab(type) {
-        document.getElementById('vocab-section').style.display = type === 'vocab' ? 'block' : 'none';
-        document.getElementById('grammar-section').style.display = type === 'grammar' ? 'block' : 'none';
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.innerText.includes(type === 'vocab' ? '단어' : '문법'));
-        });
+    // 2. 데이터 페칭 로직
+    async function fetchData() {
+        try {
+            const vRes = await fetch(VOCAB_API);
+            vocabList = await vRes.json();
+            
+            const gRes = await fetch(GRAMMAR_API);
+            const gData = await gRes.json();
+            // N3 레벨만 필터링 (데이터 구조에 따라 조정)
+            grammarList = gData.filter(i => i.level === 'n3' || i.level === 3) || gData;
+
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+            document.getElementById('debug-status').innerText = `성공: 단어 ${vocabList.length}개 / 문법 ${grammarList.length}개`;
+            
+            loadNext();
+        } catch (e) {
+            document.getElementById('debug-status').innerText = "로드 실패. 인터넷 연결이나 CORS를 확인하세요.";
+            console.error(e);
+        }
     }
 
-    function nextVocab() {
-        const item = n3Vocab[Math.floor(Math.random() * n3Vocab.length)];
-        document.getElementById('v-kanji').innerText = item.k;
-        document.getElementById('v-info').innerText = `${item.r} | ${item.m}`;
-        document.getElementById('v-info').classList.remove('show');
+    // 3. UI 제어 로직
+    function switchTab(mode) {
+        currentMode = mode;
+        document.getElementById('vocab-tab').classList.toggle('active', mode === 'vocab');
+        document.getElementById('grammar-tab').classList.toggle('active', mode === 'grammar');
+        
+        document.getElementById('vocab-area').style.display = mode === 'vocab' ? 'block' : 'none';
+        document.getElementById('grammar-area').style.display = mode === 'grammar' ? 'block' : 'none';
+        
+        document.getElementById('sub-btn').style.display = mode === 'vocab' ? 'block' : 'none';
+        
+        loadNext();
     }
 
-    function nextGrammar() {
-        const item = n3Grammar[Math.floor(Math.random() * n3Grammar.length)];
-        document.getElementById('g-title').innerText = item.t;
-        document.getElementById('g-meaning').innerText = item.m;
-        document.getElementById('g-ex').innerText = item.e;
+    function loadNext() {
+        document.getElementById('display-info').classList.remove('show');
+        
+        if (currentMode === 'vocab') {
+            const item = vocabList[Math.floor(Math.random() * vocabList.length)];
+            document.getElementById('display-word').innerText = item.word || item.kanji;
+            document.getElementById('display-info').innerText = `${item.furigana || item.reading} | ${item.meaning}`;
+        } else {
+            const item = grammarList[Math.floor(Math.random() * grammarList.length)];
+            document.getElementById('g-title').innerText = item.title || item.expression;
+            document.getElementById('g-meaning').innerText = item.meaning;
+            document.getElementById('g-example').innerText = item.example || "예문 준비 중입니다.";
+        }
     }
 
-    function showAnswer(id) {
-        document.getElementById(id).classList.add('show');
+    function reveal() {
+        document.getElementById('display-info').classList.add('show');
     }
 
-    // 초기 실행
-    nextVocab();
-    nextGrammar();
+    // 초기화
+    fetchData();
 </script>
 
 </body>
