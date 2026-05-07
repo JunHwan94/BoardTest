@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JLPT N3 Master Dashboard</title>
+    <!-- 구글 폰트 및 아이콘 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --success: #27ae60;
+            --bg: #f4f7f6;
+            --card: #ffffff;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', 'Noto Sans JP', sans-serif;
+            background-color: var(--bg);
+            color: var(--primary);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* 레이아웃 & 탭 스타일 */
+        .container { width: 95%; max-width: 600px; margin-top: 20px; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn {
+            flex: 1; padding: 12px; border: none; background: #ddd;
+            cursor: pointer; border-radius: 8px; font-weight: bold; transition: 0.3s;
+        }
+        .tab-btn.active { background: var(--primary); color: white; }
+
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+
+        /* 카드 공통 스타일 */
+        .card {
+            background: var(--card); padding: 30px; border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center;
+            min-height: 250px; display: flex; flex-direction: column; justify-content: center;
+        }
+
+        /* 어휘 퀴즈 스타일 */
+        .word-kanji { font-size: 3.5rem; margin-bottom: 10px; }
+        .word-info { font-size: 1.5rem; color: var(--accent); opacity: 0; transition: 0.3s; }
+        .word-info.show { opacity: 1; }
+
+        /* 문법/지문 스타일 */
+        .grammar-box { text-align: left; }
+        .grammar-title { font-size: 1.2rem; font-weight: bold; border-left: 4px solid var(--accent); padding-left: 10px; margin-bottom: 15px; }
+        .grammar-example { background: #f9f9f9; padding: 15px; border-radius: 5px; font-style: italic; }
+
+        /* 컨트롤 버튼 */
+        .controls { margin-top: 20px; display: flex; gap: 10px; width: 100%; }
+        .btn {
+            flex: 1; padding: 15px; border: none; border-radius: 8px;
+            font-size: 1rem; cursor: pointer; transition: 0.2s; font-weight: bold;
+        }
+        .btn-main { background: var(--primary); color: white; }
+        .btn-sub { background: var(--success); color: white; }
+        .btn:active { transform: scale(0.98); }
+
+        .loading { font-size: 1rem; color: #888; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 style="text-align: center;">JLPT N3 Study Console</h2>
+    
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('vocab')">단어 퀴즈</button>
+        <button class="tab-btn" onclick="switchTab('grammar')">문법/독해</button>
+    </div>
+
+    <!-- 어휘 섹션 -->
+    <div id="vocab" class="content-section active">
+        <div class="card">
+            <div id="v-loading" class="loading">데이터를 불러오는 중...</div>
+            <div id="v-content" style="display:none;">
+                <div class="word-kanji" id="v-kanji">-</div>
+                <div class="word-info" id="v-info">-</div>
+            </div>
+        </div>
+        <div class="controls">
+            <button class="btn btn-sub" onclick="toggleAnswer()">정답 확인</button>
+            <button class="btn btn-main" onclick="loadNextVocab()">다음 문제</button>
+        </div>
+    </div>
+
+    <!-- 문법 섹션 -->
+    <div id="grammar" class="content-section">
+        <div class="card">
+            <div id="g-loading" class="loading">데이터를 불러오는 중...</div>
+            <div id="g-content" class="grammar-box" style="display:none;">
+                <div class="grammar-title" id="g-title">-</div>
+                <p id="g-meaning" style="color:#666;"></p>
+                <div class="grammar-example" id="g-example">-</div>
+            </div>
+        </div>
+        <div class="controls">
+            <button class="btn btn-main" onclick="loadNextGrammar()">다른 지문 보기</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 외부 API/데이터 소스 URL (오픈소스 JLPT 데이터셋 활용)
+    const VOCAB_URL = 'https://raw.githubusercontent.com/j-f-v/jlpt-vocabulary/master/json/n3.json';
+    const GRAMMAR_URL = 'https://raw.githubusercontent.com/mistval/jlpt-grammar-api/master/db.json'; // 예시 문법 DB
+
+    let vocabData = [];
+    let grammarData = [];
+
+    // 탭 전환 logic
+    function switchTab(tabId) {
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    // 데이터 초기 로드 (Fetch API)
+    async function init() {
+        try {
+            const [vRes, gRes] = await Promise.all([
+                fetch(VOCAB_URL).then(r => r.json()),
+                fetch(GRAMMAR_URL).then(r => r.json())
+            ]);
+            
+            vocabData = vRes;
+            grammarData = gRes.n3 || gRes; // 데이터 구조에 따라 조정
+
+            document.getElementById('v-loading').style.display = 'none';
+            document.getElementById('v-content').style.display = 'block';
+            document.getElementById('g-loading').style.display = 'none';
+            document.getElementById('g-content').style.display = 'block';
+
+            loadNextVocab();
+            loadNextGrammar();
+        } catch (err) {
+            alert('데이터를 불러오는 데 실패했습니다.');
+            console.error(err);
+        }
+    }
+
+    // 어휘 로직
+    function loadNextVocab() {
+        const item = vocabData[Math.floor(Math.random() * vocabData.length)];
+        document.getElementById('v-kanji').innerText = item.word || item.kanji;
+        document.getElementById('v-info').innerText = `${item.furigana || item.reading} [${item.meaning}]`;
+        document.getElementById('v-info').classList.remove('show');
+    }
+
+    function toggleAnswer() {
+        document.getElementById('v-info').classList.add('show');
+    }
+
+    // 문법 로직 (지문 형태)
+    function loadNextGrammar() {
+        const list = Array.isArray(grammarData) ? grammarData : Object.values(grammarData);
+        const item = list[Math.floor(Math.random() * list.length)];
+        
+        document.getElementById('g-title').innerText = item.expression || item.title || "N3 문법 포인트";
+        document.getElementById('g-meaning').innerText = item.meaning || "의미를 파악해 보세요.";
+        document.getElementById('g-example').innerText = item.example || item.sentence || "예문 데이터를 불러올 수 없습니다.";
+    }
+
+    init();
+</script>
+
+</body>
+</html>
